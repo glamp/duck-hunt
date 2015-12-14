@@ -1,0 +1,264 @@
+<!DOCTYPE HTML>
+<html lang="en">
+
+<head>
+  <title>Ball in a Cup</title>
+  <link rel="stylesheet" href="css/bootstrap.min.css" />
+  <link rel=stylesheet href="css/colors.css" />
+  <script src="js/lib/jquery.min.js"></script>
+  <script src="js/main.js"></script>
+  <script src="/socket.io/socket.io.js"></script>
+  <style>
+    .garden {
+      position: relative;
+      width : 100%;
+      height: 800px;
+      border: 5px solid #CCC;
+      border-radius: 10px;
+    }
+
+    .ball {
+      position: absolute;
+      top   : 90px;
+      left  : 90px;
+      width : 20px;
+      height: 20px;
+      background: #2ECC40;
+      border-radius: 100%;
+      opacity: 0.4;
+    }
+    .square {
+      position: absolute;
+      top   : 180px;
+      left  : 180px;
+      width : 40px;
+      height: 40px;
+      background: #FF851B;
+      opacity: 0.4;
+    }
+    .time-piece {
+      float: left;
+      top   : 90px;
+      left  : 90px;
+      width : 20px;
+      height: 20px;
+      background: #0074D9;
+      opacity: 0.8;
+      margin: 3px;
+    }
+  </style>
+</head>
+
+<body>
+  <div class="container">
+    <div class="row">
+      <div class="col-sm-9">
+        <div class="garden">
+          <div class="ball"></div>
+          <div class="square"></div>
+        </div>
+      </div>
+      <div class="col-sm-3">
+        <label for="output">Orientation</label>
+        <pre class="output"></pre>
+        <div class="form-group">
+          <label for="sensitivity">Sensitivity</label>
+          <input class="form-control" id="sensitivity" type="number" min=0 max=10 step=0.1 value=2.3 />
+        </div>
+        <div class="form-group">
+          <label for="points">Points</label>
+          <input class="form-control" id="points" type="number" value=0 readonly />
+        </div>
+        <div id="time-remaining" class="row">
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <script type="text/javascript">
+
+  var isFiring = false;
+  
+
+  setInterval(function() {
+    $("#time-remaining .time-piece").last().remove();
+  }, 1000)
+
+  var snd = new Audio("ding.mp3");
+  var sndFire = new Audio("gun.wav");
+
+  var socket = io();
+  var ball   = document.querySelector('.ball');
+  var square = document.querySelector('.square');
+  var garden = document.querySelector('.garden');
+  var output = document.querySelector('.output');
+
+  var maxX = garden.clientWidth  - ball.clientWidth;
+  var maxY = garden.clientHeight - ball.clientHeight;
+
+  function addTime() {
+    $("#time-remaining").append('<div class="time-piece"></div>');
+  }
+
+  for(var i=0; i<22; i++) {
+    addTime();
+  }
+
+  var timer = null;
+
+  function placeSquare() {
+    var xPos = Math.random() * 175;
+    var yPos = Math.random() * 175;
+    square.style.top = (maxX*xPos/180 - 10) + "px";
+    square.style.left = (maxY*yPos/180 - 10) + "px";
+    timer = new Date();
+  }
+
+  placeSquare();
+
+  function moveSquare(n) {
+    var n = (Math.random() * n) - (n / 2);
+    square.style.top = (parseFloat(square.style.top) + n) + "px"
+    square.style.left = (parseFloat(square.style.left) + n) + "px"
+  }
+
+  function mod(a, n) {
+    return a - Math.floor(a / n) * n;
+  }
+
+  function calcDistance(alpha, offset) {
+    var a = alpha - offset;
+    a = mod(a, 360);
+    var mag = Math.min(360 - a, a);
+    if ((360 - a) > a) {
+      return -mag;
+    } else {
+      return mag;
+    }
+  }
+
+  function calcDirection(alpha, offset) {
+    if (alpha > offset) {
+      return 1;
+    } else {
+      return -1;
+    }
+  }
+
+  var devMode = true;
+  var gameover = false;
+  var kills = -2;
+  var squareMover;
+
+  function handleOrientation(data) {
+
+    if (devMode==false && gameover==false && $("#time-remaining .time-piece").length==0) {
+      $("#time-remaining").html("<p>Game Over</p>");
+      gameover = true;
+      var finalScore = parseFloat($("#points").val());
+      $.post("/leaderboard", { name: name, score: finalScore }, function(d) {
+        // window.location.href ="/leaderboard";
+      });
+    }
+
+    var sensitivity = parseFloat($("#sensitivity").val());
+    var x = data.beta;  // In degree in the range [-180,180]
+    var y = data.gamma; // In degree in the range [-90,90]
+    var z = data.alpha; // In degree in the range [-90,90]
+
+    output.innerHTML  = "beta : " + Math.round(x, 2) + "\n";
+    output.innerHTML += "gamma: " + Math.round(y, 2) + "\n";
+    output.innerHTML += "alpha: " + Math.round(z, 2) + "\n";
+    output.innerHTML += "alpha-offset: " + Math.round(data.alphaOffset, 2) + "\n";
+
+    var zz = calcDistance(z, data.alphaOffset)*sensitivity;
+    output.innerHTML += "relative-alpha: " + Math.round(zz) + "\n";
+
+
+    // Because we don't want to have the device upside down
+    // We constrain the x value to the range [-90,90]
+    var x0 = -sensitivity*x;
+    if (x0 >  90) {
+      x0 =  90
+    }
+    if (x0 < -90) {
+      x0 = -90
+    }
+
+    // To make computation easier we shift the range of 
+    // x0 and y to [0,180]
+    x0 += 90;
+    y = zz;
+    y += 90;
+
+    // 10 is half the size of the ball
+    // It center the positioning point to the center of the ball
+    ball.style.top  = (maxX*x0/180 - 10) + "px";
+    ball.style.left = (maxY*y/180 - 10) + "px";
+
+    // console.log([ball.style.top, ball.style.top + ball.style.height, square.style.top]);
+
+    var sqTop = parseFloat(square.style.top);
+    var sqBot = parseFloat(square.style.top) + $(square).height();
+    var sqLeft = parseFloat(square.style.left);
+    var sqRight= parseFloat(square.style.left) + $(square).width();
+
+    var ballTop = parseFloat(ball.style.top);
+    var ballBot = parseFloat(ball.style.top) + $(ball).height();
+    var ballLeft = parseFloat(ball.style.left);
+    var ballRight = parseFloat(ball.style.left) + $(ball).width();
+
+    if (sqBot > ballTop && ballTop > sqTop) {
+      if (sqLeft < ballLeft && ballRight < sqRight) {
+        if (gameover==false && isFiring==true) {
+          var timeElapsed = new Date() - timer;
+          var points = Math.round(10000 / (1 + timeElapsed));
+          $("#points").val(parseFloat($("#points").val()) + points);
+          setTimeout(function() {
+            snd.play();
+          }, 250);
+          placeSquare();
+          if (kills > 0) {
+            if (squareMover) {
+              clearInterval(squareMover);
+            }
+
+            // params.positions_to_run = 10000;
+            // var coords = runSimulation(params)
+            //   , i = 0;
+            // squareMover = setInterval(function() {
+            //   if (i > coords.y.length) {
+            //     return;
+            //   }
+            //   square.style.top = (50*coords.y[i] + 50) + "px";
+            //   square.style.left = (50*coords.x[i] + 50) + "px";
+            //   i++;
+            // }, 50);
+          }
+          addTime();
+          kills++;
+        }
+      }
+    }
+
+  }
+
+  socket.on('orientation', handleOrientation);
+  socket.on('fire', function() {
+    if (isFiring==false) {
+      sndFire.play();
+      ball.style.backgroundColor = "#0074D9";
+      isFiring = true;
+      setTimeout(function() {
+        ball.style.backgroundColor = "#2ECC40";
+        isFiring = false;
+      }, 75);
+    }
+  });
+
+  window.addEventListener('deviceorientation', handleOrientation);
+
+  </script>
+</body>
+
+</html>

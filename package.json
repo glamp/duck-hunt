@@ -1,0 +1,26 @@
+{
+  "name": "duck-hunt",
+  "version": "0.0.1",
+  "description": "Duck Hunt for Drones",
+  "main": "app.coffee",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "keywords": [
+    "drone",
+    "duck",
+    "hunt",
+    "nofriendo"
+  ],
+  "author": "Greg Lamp",
+  "license": "BSD-2-Clause",
+  "dependencies": {
+    "body-parser": "^1.14.1",
+    "coffee-script": "^1.10.0",
+    "express": "^4.13.3",
+    "hogan-express": "^0.5.2",
+    "morgan": "^1.6.1",
+    "socket.io": "^1.3.7",
+    "underscore": "^1.8.3"
+  }
+}

@@ -1,0 +1,29 @@
+<!DOCTYPE HTML>
+<html lang="en">
+
+<head>
+  <title>Leaderboard</title>
+  <link rel="stylesheet" href="css/bootstrap.min.css" />
+  <script src="js/lib/jquery.min.js"></script>
+</head>
+
+<body>
+  <div class="container">
+    <table class="table table-bordered">
+      <thead>
+        <tr>
+          <th>Name</th>
+          <th>Score</th>
+        </tr>
+      </thead>
+      <tbody>
+        {{#leaderboard}}
+        <tr>
+          <td>{{ name }}</td>
+          <td>{{ score }}</td>
+        </tr>
+        {{/leaderboard}}
+      </tbody>
+  </div>
+
+</html>
