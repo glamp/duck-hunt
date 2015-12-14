@@ -11,7 +11,7 @@
   <style>
     .garden {
       position: relative;
-      width : 100%;
+      width : 800px;
       height: 800px;
       border: 5px solid #CCC;
       border-radius: 10px;
@@ -54,7 +54,6 @@
     <div class="row">
       <div class="col-sm-9">
         <div class="garden">
-          <div class="ball"></div>
           <div class="square"></div>
         </div>
       </div>
@@ -67,7 +66,7 @@
         </div>
         <div class="form-group">
           <label for="points">Points</label>
-          <input class="form-control" id="points" type="number" value=0 readonly />
+          <input class="hide form-control" id="points" type="number" value=0 readonly />
         </div>
         <div id="time-remaining" class="row">
         </div>
@@ -82,9 +81,9 @@
 
   setInterval(function() {
     $("#time-remaining .time-piece").last().remove();
-  }, 1000)
+  }, 10000)
 
-  var snd = new Audio("ding.mp3");
+  var snd = new Audio("duck.wav");
   var sndFire = new Audio("gun.wav");
 
   var socket = io();
@@ -93,8 +92,8 @@
   var garden = document.querySelector('.garden');
   var output = document.querySelector('.output');
 
-  var maxX = garden.clientWidth  - ball.clientWidth;
-  var maxY = garden.clientHeight - ball.clientHeight;
+  var maxX = garden.clientWidth  - 20; //ball.clientWidth;
+  var maxY = garden.clientHeight - 20; //ball.clientHeight;
 
   function addTime() {
     $("#time-remaining").append('<div class="time-piece"></div>');
@@ -149,8 +148,27 @@
   var gameover = false;
   var kills = -2;
   var squareMover;
+  var players = [];
+  var colors = ["red", "steelblue"];
 
   function handleOrientation(data) {
+
+    if (! data.username) {
+      return;
+    }
+
+    if (players.indexOf(data.username) < 0) {
+      players.push(data.username);
+      var i = players.length % colors.length;
+      console.log(i);
+      $(".garden").append('<div style="background-color: ' + colors[i] + '" id="player-' + data.username + '" class="ball"></div>');
+      // add points thingy...
+    }
+
+    var cursor = document.getElementById("player-" + data.username)
+    if (! cursor) {
+      return;
+    }
 
     if (devMode==false && gameover==false && $("#time-remaining .time-piece").length==0) {
       $("#time-remaining").html("<p>Game Over</p>");
@@ -193,27 +211,27 @@
 
     // 10 is half the size of the ball
     // It center the positioning point to the center of the ball
-    ball.style.top  = (maxX*x0/180 - 10) + "px";
-    ball.style.left = (maxY*y/180 - 10) + "px";
+    cursor.style.top  = (maxX*x0/180 - 10) + "px";
+    cursor.style.left = (maxY*y/180 - 10) + "px";
 
-    // console.log([ball.style.top, ball.style.top + ball.style.height, square.style.top]);
 
     var sqTop = parseFloat(square.style.top);
     var sqBot = parseFloat(square.style.top) + $(square).height();
     var sqLeft = parseFloat(square.style.left);
     var sqRight= parseFloat(square.style.left) + $(square).width();
 
-    var ballTop = parseFloat(ball.style.top);
-    var ballBot = parseFloat(ball.style.top) + $(ball).height();
-    var ballLeft = parseFloat(ball.style.left);
-    var ballRight = parseFloat(ball.style.left) + $(ball).width();
+    var cursorTop = parseFloat(cursor.style.top);
+    var cursorBot = parseFloat(cursor.style.top) + $(cursor).height();
+    var cursorLeft = parseFloat(cursor.style.left);
+    var cursorRight = parseFloat(cursor.style.left) + $(cursor).width();
 
-    if (sqBot > ballTop && ballTop > sqTop) {
-      if (sqLeft < ballLeft && ballRight < sqRight) {
+    if (sqBot > cursorTop && cursorTop > sqTop) {
+      if (sqLeft < cursorLeft && cursorRight < sqRight) {
         if (gameover==false && isFiring==true) {
           var timeElapsed = new Date() - timer;
           var points = Math.round(10000 / (1 + timeElapsed));
-          $("#points").val(parseFloat($("#points").val()) + points);
+          var id = "#points-" + data.username;
+          $(id).val(parseFloat($(id).val()) + points);
           setTimeout(function() {
             snd.play();
           }, 250);
@@ -244,13 +262,23 @@
   }
 
   socket.on('orientation', handleOrientation);
-  socket.on('fire', function() {
+  socket.on('fire', function(username) {
+    if (! username) {
+      return;
+    }
+    var cursor = document.getElementById("player-" + username);
+    if (! cursor) {
+      return;
+    }
+
     if (isFiring==false) {
       sndFire.play();
-      ball.style.backgroundColor = "#0074D9";
+      var originalColor = cursor.style.backgroundColor;
+      cursor.style.backgroundColor = "#0074D9";
       isFiring = true;
+      console.log(username, originalColor)
       setTimeout(function() {
-        ball.style.backgroundColor = "#2ECC40";
+        cursor.style.backgroundColor = originalColor; // "#2ECC40";
         isFiring = false;
       }, 75);
     }

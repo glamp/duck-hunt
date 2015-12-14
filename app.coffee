@@ -47,5 +47,5 @@ io.on 'connection', (socket) ->
   socket.on 'orientation', (data) ->
     socket.broadcast.emit 'orientation', data
 
-  socket.on 'fire', () ->
-    socket.broadcast.emit 'fire'
+  socket.on 'fire', (username) ->
+    socket.broadcast.emit 'fire', username
