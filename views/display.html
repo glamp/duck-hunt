@@ -11,8 +11,8 @@
   <style>
     .garden {
       position: relative;
-      width : 800px;
-      height: 800px;
+      width : 700px;
+      height: 700px;
       border: 5px solid #CCC;
       border-radius: 10px;
     }
@@ -61,29 +61,36 @@
 <body>
   <div class="container">
     <div class="row">
-      <div class="col-sm-9">
-        <div class="garden">
-          <div class="square"></div>
-        </div>
-      </div>
-      <div class="col-sm-3">
-        <label for="output">Orientation</label>
-        <pre class="output"></pre>
-        <div class="form-group">
-          <label for="sensitivity">Sensitivity</label>
-          <input class="form-control" id="sensitivity" type="number" min=0 max=10 step=0.1 value=2.3 />
-        </div>
+      <div class="col-sm-3 text-left">
         <div class="form-group">
           <label for="points">Points</label>
           <input class="hide form-control" id="points" type="number" value=0 readonly />
         </div>
-        <hr />
-        <label>Time Remaining</label>
-        <div id="time-remaining" class="row">
-        </div>
-        <hr />
         <label>Bullets</label>
         <div id="bullets" class="row"></div>
+      </div>
+      <div class="col-sm-7">
+        <div class="hide form-group">
+          <label for="sensitivity">Sensitivity</label>
+          <input class="form-control" id="sensitivity" type="number" min=0 max=10 step=0.1 value=2.3 />
+        </div>
+        <!-- <label>Time Remaining</label> -->
+        <div id="time-remaining" class="row"></div>
+      </div>
+      <div class="col-sm-2">
+        <div class="form-group">
+          <label for="points">Points</label>
+          <input class="hide form-control" id="points" type="number" value=0 readonly />
+        </div>
+        <label>Bullets</label>
+        <div id="bullets-2" class="row"></div>
+      </div>
+    </div>
+    <div class="row">
+      <div class="col-sm-10 col-sm-offset-2">
+        <div class="garden">
+          <div class="square"></div>
+        </div>
       </div>
     </div>
   </div>
@@ -96,7 +103,7 @@
 
   setInterval(function() {
     $("#time-remaining .time-piece").last().remove();
-  }, 10000)
+  }, 1000)
 
   var snd = new Audio("duck.wav");
   var sndFire = new Audio("gun.wav");
@@ -114,8 +121,10 @@
 
   function reload(username) {
     $("#bullets .bullet").remove();
+    $("#bullets-2 .bullet").remove();
     for(var i=0; i<5; i++) {
       $("#bullets").append('<div class="bullet"></div>');
+      $("#bullets-2").append('<div class="bullet"></div>');
     }
     sndGunReload.play();
   }
@@ -207,13 +216,7 @@
     var y = data.gamma; // In degree in the range [-90,90]
     var z = data.alpha; // In degree in the range [-90,90]
 
-    output.innerHTML  = "beta : " + Math.round(x, 2) + "\n";
-    output.innerHTML += "gamma: " + Math.round(y, 2) + "\n";
-    output.innerHTML += "alpha: " + Math.round(z, 2) + "\n";
-    output.innerHTML += "alpha-offset: " + Math.round(data.alphaOffset, 2) + "\n";
-
     var zz = calcDistance(z, data.alphaOffset)*sensitivity;
-    output.innerHTML += "relative-alpha: " + Math.round(zz) + "\n";
 
 
     // Because we don't want to have the device upside down
