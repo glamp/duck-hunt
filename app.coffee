@@ -37,15 +37,30 @@ app.post '/leaderboard', (req, res) ->
   leaderboard = _.sortBy leaderboard, (i) -> return -i.score
   res.send "OK"
 
-
 server = app.listen(8080)
 
 io = require('socket.io')(server)
 
+colors = ["#e41a1c","#377eb8","#4daf4a","#984ea3","#ff7f00","#ffff33","#a65628","#f781bf","#999999"]
+players = {}
+
 io.on 'connection', (socket) ->
 
+  socket.color = players.length
+
+  socket.on 'register', (username) ->
+    socket.username = username
+    availableColors = _.difference(_.values(players), colors)
+    players[socket.id] = availableColors[0]
+    socket.color = availableColors[0]
+
   socket.on 'orientation', (data) ->
+    data.color = socket.color
     socket.broadcast.emit 'orientation', data
 
   socket.on 'fire', (username) ->
     socket.broadcast.emit 'fire', username
+
+  socket.on 'disconnect', () ->
+    delete players[socket.id]
+

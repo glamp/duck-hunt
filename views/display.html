@@ -146,10 +146,9 @@
 
   var devMode = true;
   var gameover = false;
-  var kills = -2;
+  var kills = 0;
   var squareMover;
   var players = [];
-  var colors = ["red", "steelblue"];
 
   function handleOrientation(data) {
 
@@ -159,9 +158,7 @@
 
     if (players.indexOf(data.username) < 0) {
       players.push(data.username);
-      var i = players.length % colors.length;
-      console.log(i);
-      $(".garden").append('<div style="background-color: ' + colors[i] + '" id="player-' + data.username + '" class="ball"></div>');
+      $(".garden").append('<div style="background-color: ' + data.color + '" id="player-' + data.username + '" class="ball"></div>');
       // add points thingy...
     }
 
@@ -240,18 +237,6 @@
             if (squareMover) {
               clearInterval(squareMover);
             }
-
-            // params.positions_to_run = 10000;
-            // var coords = runSimulation(params)
-            //   , i = 0;
-            // squareMover = setInterval(function() {
-            //   if (i > coords.y.length) {
-            //     return;
-            //   }
-            //   square.style.top = (50*coords.y[i] + 50) + "px";
-            //   square.style.left = (50*coords.x[i] + 50) + "px";
-            //   i++;
-            // }, 50);
           }
           addTime();
           kills++;
